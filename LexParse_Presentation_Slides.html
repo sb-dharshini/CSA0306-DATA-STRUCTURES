@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LexParse — Compiler Front End Presentation Slides</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --ink: #0f172a;
+      --muted: #475569;
+      --subtle: #64748b;
+      --border: #e2e8f0;
+      --accent: #1d4ed8;
+      --accent-soft: #eff6ff;
+      --emerald: #047857;
+      --red: #b91c1c;
+      --amber: #b45309;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    code, .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    .topbar {
+      height: 56px;
+      padding: 0 24px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+
+    .brand { font-weight: 700; font-size: 16px; letter-spacing: -0.02em; }
+    .kicker-top { font-size: 12px; color: var(--subtle); margin-left: 10px; }
+
+    .actions { display: flex; align-items: center; gap: 8px; }
+
+    button {
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 7px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--ink);
+      cursor: pointer;
+    }
+    button:hover:not(:disabled) { background: #f1f5f9; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+    button.primary:hover:not(:disabled) { background: #1e40af; }
+
+    .progress-track {
+      height: 4px;
+      background: var(--border);
+      width: 100%;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      transition: width 160ms ease;
+    }
+
+    main {
+      flex: 1;
+      max-width: 1120px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 36px 24px;
+    }
+
+    .slide {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 40px 44px;
+      min-height: 540px;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 28px;
+    }
+    .slide.active { display: flex; }
+
+    .slide-kicker {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      font-size: 40px;
+      line-height: 1.1;
+      letter-spacing: -0.025em;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    h2 {
+      font-size: 30px;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      font-weight: 700;
+      margin-bottom: 18px;
+    }
+
+    h3 {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    p.lead {
+      font-size: 17px;
+      color: var(--muted);
+      max-width: 68ch;
+    }
+
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+
+    .panel {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+    }
+
+    .panel.accent {
+      background: var(--accent-soft);
+      border-color: #bfdbfe;
+    }
+
+    .formula-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 13px;
+      margin-top: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    th, td {
+      text-align: left;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    th { background: var(--bg); font-size: 12px; color: var(--subtle); }
+
+    .notes {
+      margin-top: 16px;
+      padding: 16px 20px;
+      background: #0f172a;
+      color: #e2e8f0;
+      border-radius: 10px;
+      font-size: 13px;
+      display: none;
+    }
+    .notes.visible { display: block; }
+    .notes-title { font-size: 11px; color: #93c5fd; font-weight: 600; margin-bottom: 4px; }
+
+    .bottombar {
+      height: 56px;
+      padding: 0 24px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .slide-nums { display: flex; gap: 6px; }
+    .slide-nums button.active-num {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+
+    @media (max-width: 860px) {
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      .slide { padding: 24px; }
+      h1 { font-size: 28px; }
+      h2 { font-size: 22px; }
+    }
+
+    @page { size: landscape; margin: 0.4in; }
+
+    @media print {
+      body { background: #ffffff; }
+      .topbar, .progress-track, .bottombar, .notes { display: none !important; }
+      main { max-width: 100%; padding: 0; }
+      .slide {
+        display: flex !important;
+        page-break-after: always;
+        break-after: page;
+        border: 1px solid #cbd5e1;
+        min-height: 6.7in;
+        margin-bottom: 0;
+      }
+      .slide:last-child { page-break-after: auto; break-after: auto; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <span class="brand">LexParse</span>
+      <span class="kicker-top" id="topKicker">Slide 1 of 8</span>
+    </div>
+    <div class="actions">
+      <button type="button" onclick="toggleNotes()">Speaker Notes (N)</button>
+      <button type="button" class="primary" onclick="window.print()">Print / Save PDF</button>
+    </div>
+  </header>
+
+  <div class="progress-track"><div class="progress-fill" id="progressFill" style="width: 12.5%"></div></div>
+
+  <main>
+    <!-- Slide 1 -->
+    <section class="slide active" data-title="Slide 01 · Title & Agenda" data-note="Frame the talk around how every compiler front end begins with a deterministic LIFO Stack before any optimization or machine-code generation.">
+      <div>
+        <p class="slide-kicker">Slide 01 · Data Structures &amp; Algorithms Presentation</p>
+        <h1>Compiler Front End: Bracket Checker and Expression Evaluator</h1>
+        <p class="lead">How a single Last-In, First-Out (LIFO) Stack validates nested syntax, translates Infix math into Reverse Polish Notation, and evaluates arithmetic expressions in linear O(n) time.</p>
+      </div>
+      <div class="grid-3">
+        <div class="panel">
+          <h3>Part I · Bracket Checker</h3>
+          <p style="font-size:13px;color:var(--muted)">Pushdown automaton enforcing strict nested delimiter pairing across (), [], and {}.</p>
+        </div>
+        <div class="panel">
+          <h3>Part II · Shunting-Yard</h3>
+          <p style="font-size:13px;color:var(--muted)">Dijkstra’s operator stack algorithm converting Infix expressions into Postfix (RPN).</p>
+        </div>
+        <div class="panel">
+          <h3>Part III · RPN &amp; AST</h3>
+          <p style="font-size:13px;color:var(--muted)">Single-sweep operand stack evaluation and Abstract Syntax Tree synthesis.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 2 -->
+    <section class="slide" data-title="Slide 02 · Pipeline Architecture" data-note="Walk left-to-right across all four stages: Lexer -> Bracket Check -> Shunting-Yard -> RPN Evaluator & AST.">
+      <div>
+        <p class="slide-kicker">Slide 02 · Architecture</p>
+        <h2>Four Stages of a Deterministic Compiler Front End</h2>
+        <div class="grid-4">
+          <div class="panel">
+            <p class="mono" style="font-size:11px;color:var(--accent);font-weight:700">STAGE 01</p>
+            <h3>Lexical Scan</h3>
+            <p style="font-size:13px;color:var(--muted)">Groups digits, identifies operators and unary minus, and records exact column positions.</p>
+          </div>
+          <div class="panel">
+            <p class="mono" style="font-size:11px;color:var(--accent);font-weight:700">STAGE 02</p>
+            <h3>Bracket Check</h3>
+            <p style="font-size:13px;color:var(--muted)">Verifies nested scopes on a LIFO stack; detects mismatch, underflow, and unclosed EOF.</p>
+          </div>
+          <div class="panel">
+            <p class="mono" style="font-size:11px;color:var(--accent);font-weight:700">STAGE 03</p>
+            <h3>Shunting-Yard</h3>
+            <p style="font-size:13px;color:var(--muted)">Resolves operator precedence and associativity, stripping all parentheses into Postfix.</p>
+          </div>
+          <div class="panel">
+            <p class="mono" style="font-size:11px;color:var(--accent);font-weight:700">STAGE 04</p>
+            <h3>RPN Eval &amp; AST</h3>
+            <p style="font-size:13px;color:var(--muted)">Evaluates Postfix left-to-right on a value stack while building the expression tree.</p>
+          </div>
+        </div>
+      </div>
+      <div class="formula-box">Source Text: "{ [ (12 + 8) / 4 ] ^ 2 } - 5"  →  Postfix: "12 8 + 4 / 2 ^ 5 -"  →  Result: 20</div>
+    </section>
+
+    <!-- Slide 3 -->
+    <section class="slide" data-title="Slide 03 · Why LIFO Stack" data-note="Highlight the counterexample ([)] where an integer counter hits 0 and falsely accepts, whereas a LIFO stack catches the mismatch immediately.">
+      <div>
+        <p class="slide-kicker">Slide 03 · Data Structure Justification</p>
+        <h2>Why LIFO Stacks Succeed Where Counters Fail</h2>
+        <p class="lead">Balanced multi-type delimiters form a Context-Free Grammar (Dyck language). Quantity alone is insufficient; nesting order must be remembered.</p>
+        <div class="grid-2" style="margin-top:20px">
+          <div class="panel">
+            <h3>Naive Integer Counter on <span class="mono" style="color:var(--red)">([)]</span></h3>
+            <div class="formula-box">( → 1 · [ → 2 · ) → 1 · ] → 0</div>
+            <p style="font-size:13px;color:var(--amber);font-weight:600;margin-top:10px">False Positive: Reports Valid because final count equals 0.</p>
+          </div>
+          <div class="panel accent">
+            <h3>LIFO Stack Automaton on <span class="mono" style="color:var(--red)">([)]</span></h3>
+            <div class="formula-box">Push '(' · Push '[' · Read ')' ≠ top '['</div>
+            <p style="font-size:13px;color:var(--emerald);font-weight:600;margin-top:10px">Accurate: Rejects mismatch at column 3 immediately.</p>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:13px;color:var(--muted)">All three fault classes—Mismatch, Stack Underflow, and Unclosed EOF—are detected in O(n) time.</p>
+    </section>
+
+    <!-- Slide 4 -->
+    <section class="slide" data-title="Slide 04 · Bracket Checker Trace" data-note="Walk through an example bracket trace step by step, emphasizing how string literals are skipped by real compiler lexers.">
+      <div>
+        <p class="slide-kicker">Slide 04 · Worked Example — Bracket Checker</p>
+        <h2>LIFO Stack Trace: <span class="mono">{ [ (a + b) ] }</span></h2>
+        <table style="margin-top:16px">
+          <thead>
+            <tr><th>Step</th><th>Symbol</th><th>Action</th><th>LIFO Stack (Bottom → Top)</th><th>Invariant</th></tr>
+          </thead>
+          <tbody class="mono">
+            <tr><td>1</td><td>{</td><td>PUSH '{'</td><td>{</td><td>Expects '}'</td></tr>
+            <tr><td>2</td><td>[</td><td>PUSH '['</td><td>{ [</td><td>Expects ']'</td></tr>
+            <tr><td>3</td><td>(</td><td>PUSH '('</td><td>{ [ (</td><td>Expects ')'</td></tr>
+            <tr><td>4</td><td>)</td><td>POP &amp; MATCH '('</td><td>{ [</td><td>Pair (4, 8) valid</td></tr>
+            <tr><td>5</td><td>]</td><td>POP &amp; MATCH '['</td><td>{</td><td>Pair (2, 10) valid</td></tr>
+            <tr><td>6</td><td>}</td><td>POP &amp; MATCH '{'</td><td>∅ (Empty)</td><td>EOF Empty → VALID</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:13px;color:var(--muted)">Production detail: Delimiters inside quoted string literals like <span class="mono">print("(unclosed")</span> are skipped during lexical scanning.</p>
+    </section>
+
+    <!-- Slide 5 -->
+    <section class="slide" data-title="Slide 05 · Expression Notations" data-note="Explain why compilers convert Infix into Postfix (RPN) or ASTs: eliminates precedence ambiguity and removes parentheses.">
+      <div>
+        <p class="slide-kicker">Slide 05 · Expression Representations</p>
+        <h2>Infix Ambiguity vs. Parenthesis-Free Notations</h2>
+        <div class="grid-3" style="margin-top:20px">
+          <div class="panel">
+            <p style="font-size:12px;font-weight:600;color:var(--subtle)">Infix (Human Input)</p>
+            <p class="mono" style="font-size:22px;font-weight:700;margin:10px 0">(3 + 4) * 2</p>
+            <p style="font-size:13px;color:var(--muted)">Operator sits between operands. Requires parentheses and precedence rules to disambiguate.</p>
+          </div>
+          <div class="panel accent">
+            <p style="font-size:12px;font-weight:600;color:var(--accent)">Postfix / RPN (Stack VM)</p>
+            <p class="mono" style="font-size:22px;font-weight:700;color:var(--accent);margin:10px 0">3 4 + 2 *</p>
+            <p style="font-size:13px;color:var(--muted)">Zero parentheses needed. Evaluates in one strict left-to-right pass (JVM, WebAssembly, CPython).</p>
+          </div>
+          <div class="panel">
+            <p style="font-size:12px;font-weight:600;color:var(--subtle)">Prefix / Polish (AST Pre-Order)</p>
+            <p class="mono" style="font-size:22px;font-weight:700;margin:10px 0">* + 3 4 2</p>
+            <p style="font-size:13px;color:var(--muted)">Operator precedes operands (Jan Łukasiewicz, 1924). Matches Pre-Order traversal of the AST.</p>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:13px;color:var(--muted)">In-order AST traversal recovers Infix; Post-order gives Postfix; Pre-order gives Prefix.</p>
+    </section>
+
+    <!-- Slide 6 -->
+    <section class="slide" data-title="Slide 06 · Shunting-Yard & RPN Rules" data-note="Emphasize right-associative exponentiation (2^3^2 = 512) and RPN pop order (right operand popped before left operand).">
+      <div>
+        <p class="slide-kicker">Slide 06 · Dijkstra’s Shunting-Yard (1961)</p>
+        <h2>Precedence, Associativity &amp; Operand Pop Order</h2>
+        <div class="grid-2" style="margin-top:16px">
+          <div class="panel">
+            <h3>Operator Stack Pop Rule</h3>
+            <p style="font-size:13px;color:var(--muted)">Pop <span class="mono">top</span> to output while <span class="mono">top</span> is not an opening bracket and:</p>
+            <div class="formula-box">
+              <div><strong>Left-Assoc (+ - * / %):</strong> prec(top) ≥ prec(op)</div>
+              <div style="margin-top:6px"><strong>Right-Assoc (^):</strong> prec(top) &gt; prec(op)</div>
+            </div>
+            <p class="mono" style="font-size:12px;color:var(--muted);margin-top:10px">2 ^ 3 ^ 2 → "2 3 2 ^ ^" → 2 ^ 9 = 512</p>
+          </div>
+          <div class="panel">
+            <h3>RPN Operand Pop Order</h3>
+            <p style="font-size:13px;color:var(--muted)">LIFO order places the right-hand operand on top of the stack:</p>
+            <div class="formula-box">
+              <div>right ← valueStack.pop()</div>
+              <div>left  ← valueStack.pop()</div>
+              <div style="color:var(--emerald);font-weight:700">valueStack.push(left op right)</div>
+            </div>
+            <p class="mono" style="font-size:12px;color:var(--muted);margin-top:10px">"10 3 -" → right=3, left=10 → 10 - 3 = 7</p>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:13px;color:var(--muted)">Context-sensitive lexing also tags leading '-' or '-' after '(' / operator as unary negation (u-).</p>
+    </section>
+
+    <!-- Slide 7 -->
+    <section class="slide" data-title="Slide 07 · Worked Evaluation Trace" data-note="Show the classic textbook expression 3 + 4 * 2 / (1 - 5) ^ 2 evaluating to 3.5.">
+      <div>
+        <p class="slide-kicker">Slide 07 · Worked Example — Expression Evaluator</p>
+        <h2>Evaluating <span class="mono">3 + 4 * 2 / (1 - 5) ^ 2</span></h2>
+        <div class="formula-box" style="margin-bottom:16px">Postfix Output Queue: <strong>3 &nbsp; 4 &nbsp; 2 &nbsp; * &nbsp; 1 &nbsp; 5 &nbsp; - &nbsp; 2 &nbsp; ^ &nbsp; / &nbsp; +</strong></div>
+        <table>
+          <thead>
+            <tr><th>Token</th><th>Operation</th><th>Operand Stack (Bottom → Top)</th></tr>
+          </thead>
+          <tbody class="mono">
+            <tr><td>3, 4, 2</td><td>Push numeric literals</td><td>3, 4, 2</td></tr>
+            <tr><td>*</td><td>Pop 2 &amp; 4 → 4 * 2 = 8</td><td>3, 8</td></tr>
+            <tr><td>1, 5</td><td>Push numeric literals</td><td>3, 8, 1, 5</td></tr>
+            <tr><td>-</td><td>Pop 5 &amp; 1 → 1 - 5 = -4</td><td>3, 8, -4</td></tr>
+            <tr><td>2</td><td>Push exponent 2</td><td>3, 8, -4, 2</td></tr>
+            <tr><td>^</td><td>Pop 2 &amp; -4 → (-4) ^ 2 = 16</td><td>3, 8, 16</td></tr>
+            <tr><td>/</td><td>Pop 16 &amp; 8 → 8 / 16 = 0.5</td><td>3, 0.5</td></tr>
+            <tr><td>+</td><td>Pop 0.5 &amp; 3 → 3 + 0.5 = <strong>3.5</strong></td><td><strong>3.5 (Final Scalar)</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Slide 8 -->
+    <section class="slide" data-title="Slide 08 · Summary & Complexity" data-note="Summarize linear O(n) guarantees across every phase and invite audience Q&A.">
+      <div>
+        <p class="slide-kicker">Slide 08 · Summary &amp; Complexity Bounds</p>
+        <h2>Linear-Time Guarantees &amp; Key Takeaways</h2>
+        <table style="margin-top:16px">
+          <thead>
+            <tr><th>Compiler Front-End Phase</th><th>Data Structure</th><th>Time</th><th>Space</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>01. Lexical Scanner</strong></td><td>Single-pass Cursor</td><td class="mono" style="color:var(--accent);font-weight:700">O(n)</td><td class="mono">O(n)</td></tr>
+            <tr><td><strong>02. Bracket Balance Checker</strong></td><td>LIFO Delimiter Stack</td><td class="mono" style="color:var(--accent);font-weight:700">O(n)</td><td class="mono">O(n)</td></tr>
+            <tr><td><strong>03. Shunting-Yard Translator</strong></td><td>Operator Stack + Queue</td><td class="mono" style="color:var(--accent);font-weight:700">O(n)</td><td class="mono">O(n)</td></tr>
+            <tr><td><strong>04. RPN Evaluator &amp; AST</strong></td><td>Operand / Node Stack</td><td class="mono" style="color:var(--accent);font-weight:700">O(n)</td><td class="mono">O(n)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="grid-3">
+        <div class="panel"><h3>01. Amortized O(n)</h3><p style="font-size:13px;color:var(--muted)">Every token enters and exits the stack at most once.</p></div>
+        <div class="panel"><h3>02. Exact Diagnostics</h3><p style="font-size:13px;color:var(--muted)">Stack frames preserve column indices for pinpoint syntax errors.</p></div>
+        <div class="panel"><h3>03. Stack VMs</h3><p style="font-size:13px;color:var(--muted)">JVM, Python bytecode, and WebAssembly execute in Postfix order.</p></div>
+      </div>
+    </section>
+
+    <div class="notes" id="notesDrawer">
+      <div class="notes-title" id="notesTitle">Speaker Notes</div>
+      <div id="notesBody"></div>
+    </div>
+  </main>
+
+  <footer class="bottombar">
+    <div class="slide-nums" id="slideNums"></div>
+    <div class="actions">
+      <button type="button" id="prevBtn" onclick="go(current - 1)">← Previous</button>
+      <button type="button" id="nextBtn" class="primary" onclick="go(current + 1)">Next →</button>
+    </div>
+  </footer>
+
+  <script>
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    let current = 0;
+    let showNotes = false;
+
+    const numsWrap = document.getElementById('slideNums');
+    slides.forEach((_, idx) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = String(idx + 1);
+      btn.onclick = () => go(idx);
+      numsWrap.appendChild(btn);
+    });
+
+    function render() {
+      slides.forEach((s, i) => s.classList.toggle('active', i === current));
+      Array.from(numsWrap.children).forEach((b, i) => b.classList.toggle('active-num', i === current));
+      document.getElementById('prevBtn').disabled = current === 0;
+      document.getElementById('nextBtn').disabled = current === slides.length - 1;
+      document.getElementById('progressFill').style.width = ((current + 1) / slides.length * 100) + '%';
+      document.getElementById('topKicker').textContent = slides[current].dataset.title;
+      document.getElementById('notesTitle').textContent = 'Speaker Notes — Slide ' + (current + 1) + ' of ' + slides.length;
+      document.getElementById('notesBody').textContent = slides[current].dataset.note;
+      document.getElementById('notesDrawer').classList.toggle('visible', showNotes);
+    }
+
+    function go(idx) {
+      current = Math.max(0, Math.min(slides.length - 1, idx));
+      render();
+    }
+
+    function toggleNotes() {
+      showNotes = !showNotes;
+      render();
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'PageDown') go(current + 1);
+      else if (e.key === 'ArrowLeft' || e.key === 'PageUp') go(current - 1);
+      else if (e.key === 'n' || e.key === 'N') toggleNotes();
+    });
+
+    render();
+  </script>
+</body>
+</html>
